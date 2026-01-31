@@ -5,8 +5,16 @@ import * as THREE from 'three';
 
 export default function ThreeScene() {
   const mountRef = useRef<HTMLDivElement>(null);
-
+  const initialized = useRef(false);
+  
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+  if (!mountRef.current) return;
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
     if (!mountRef.current) return;
 
     const scene = new THREE.Scene();
@@ -55,11 +63,25 @@ export default function ThreeScene() {
         mountRef.current!.clientHeight
       );
     };
+    const onClick = (event: MouseEvent) => {
+        const rect = mountRef.current!.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+
+        const intersects = raycaster.intersectObjects(scene.children);
+        if (intersects.length > 0) {
+            cube.material.color.set(Math.random() * 0xffffff);
+        }
+    };
+
     window.addEventListener('resize', handleResize);
+    window.addEventListener('click', onClick);
 
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('click', onClick);
       mountRef.current?.removeChild(renderer.domElement);
       renderer.dispose();
     };
